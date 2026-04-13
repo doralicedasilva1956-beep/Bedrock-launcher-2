@@ -1,0 +1,40 @@
+name: Build LeviLaunchroid Custom (v7a + Offline)
+on: workflow_dispatch
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      # 1. PEGA O CÓDIGO DO REPOSITÓRIO ORIGINAL
+      - name: Clonar LeviLaunchroid
+        run: git clone --recursive https://github.com .
+
+      - name: Configurar Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      # 2. INJETA AS TUAS PREFERÊNCIAS (v7a e Login Offline)
+      - name: Modificar para v7a e Offline
+        run: |
+          # Força apenas a arquitetura armeabi-v7a em todos os arquivos de build
+          find . -name "build.gradle" -exec sed -i 's/abiFilters.*/abiFilters "armeabi-v7a"/' {} +
+          
+          # Procura por configurações de Login e força o modo Offline para True
+          find . -name "*.java" -exec sed -i 's/OFFLINE = false/OFFLINE = true/g' {} +
+          find . -name "*.java" -exec sed -i 's/OFFLINE_MODE = false/OFFLINE_MODE = true/g' {} +
+          find . -name "*.kt" -exec sed -i 's/isOffline = false/isOffline = true/g' {} +
+
+      # 3. GERA O APK
+      - name: Compilar App
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon
+
+      # 4. ENTREGA O ARQUIVO PRONTO
+      - name: Download do APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Levi-v7a-Offline-App
+          path: app/build/outputs/apk/debug/*.apk
