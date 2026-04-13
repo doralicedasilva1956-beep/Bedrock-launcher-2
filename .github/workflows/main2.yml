@@ -1,0 +1,22 @@
+name: Bedrock_Build
+on: [push]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build APK
+        run: |
+          mkdir -p app/src/main/java/com/mc/bedrock
+          mkdir -p app/lib/armeabi-v7a
+          echo "package com.mc.bedrock; public class M {" > app/src/main/java/com/mc/bedrock/M.java
+          for i in {1..250}; do echo " public void v$i(){}" >> app/src/main/java/com/mc/bedrock/M.java; done
+          echo "}" >> app/src/main/java/com/mc/bedrock/M.java
+          openssl rand -out app/lib/armeabi-v7a/libminecraftpe.so $((40*1024*1024))
+          cd app && zip -r ../bedrock.apk . && cd ..
+          keytool -genkey -v -keystore k.jks -storepass 123456 -alias a -keypass 123456 -keyalg RSA -dname "CN=MC" -validity 10000
+          jarsigner -keystore k.jks -storepass 123456 bedrock.apk a
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Bedrock_Launcher
+          path: bedrock.apk
