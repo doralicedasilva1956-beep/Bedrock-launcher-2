@@ -1,0 +1,47 @@
+name: Build LeviLaunchroid (armeabi-v7a & Offline)
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v4
+
+      - name: Configurar JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'microsoft'
+          java-version: '17'
+          cache: 'gradle'
+
+      - name: Configurar armeabi-v7a no Build
+        run: |
+          # Modifica o build.gradle para focar apenas em armeabi-v7a
+          sed -i 's/abiFilters.*/abiFilters "armeabi-v7a"/' app/build.gradle
+          echo "Configuração de arquitetura aplicada."
+
+      - name: Injetar Lógica de Login Offline
+        run: |
+          # Procura a classe de Login e força o bypass (exemplo genérico para LeviLaunchroid)
+          # Isso assume que o app usa uma verificação padrão de conta Microsoft/Mojang
+          find . -name "*Login*.java" -o -name "*Auth*.java" | xargs sed -i 's/isLoggedIn = false/isLoggedIn = true/g'
+          find . -name "*Login*.kt" -o -name "*Auth*.kt" | xargs sed -i 's/isLoggedIn = false/isLoggedIn = true/g'
+          echo "Patch de login offline aplicado."
+
+      - name: Dar permissão ao Gradlew
+        run: chmod +x gradlew
+
+      - name: Compilar APK de Release
+        run: ./gradlew assembleRelease -Pandroid.bundle.enableUncompressedNativeLibs=false
+
+      - name: Fazer upload do APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: LeviLaunchroid-V7a-Offline
+          path: app/build/outputs/apk/release/*.apk
