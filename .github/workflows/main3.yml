@@ -1,0 +1,43 @@
+name: Build Bedrock Launcher ARMv7a
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+  workflow_dispatch: # Permite rodar manualmente
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout do Código
+        uses: actions/checkout@v4
+
+      - name: Configurar JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: gradle
+
+      - name: Configurar Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Instalar NDK (necessário para armeabi-v7a)
+        run: |
+          sdkmanager "ndk;25.2.9519653" "cmake;3.22.1"
+
+      - name: Dar permissão ao Gradle
+        run: chmod +x gradlew
+
+      - name: Compilar APK (Debug)
+        run: ./gradlew assembleDebug
+
+      - name: Upload do APK Compilado
+        uses: actions/upload-artifact@v4
+        with:
+          name: Bedrock-Launcher-v7a-Android8
+          path: app/build/outputs/apk/debug/*.apk
+          retention-days: 7
